@@ -1,0 +1,9 @@
+# temporary files
+__pycache__/
+
+# env configurations
+.vscode/
+
+# AI files
+.agents/
+.codex/

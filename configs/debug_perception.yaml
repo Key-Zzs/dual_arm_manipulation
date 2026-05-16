@@ -1,0 +1,31 @@
+task:
+  name: debug_perception
+  dry_run: true
+
+perception:
+  cameras:
+    wrist:
+      type: mock
+      model: mock_wrist
+      serial: null
+      width: 640
+      height: 480
+      fps: 30
+      enable_depth: true
+  detectors:
+    tube_cap:
+      backend: mock
+      params:
+        center_px: [320, 240]
+    rack:
+      backend: mock
+      params:
+        center_px: [320, 240]
+    hole:
+      backend: mock
+      params:
+        center_px: [320, 240]
+    apriltag:
+      enabled: false
+      family: tag36h11
+      tag_size_m: 0.025

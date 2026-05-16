@@ -1,0 +1,22 @@
+task:
+  name: debug_camera
+  dry_run: true
+
+perception:
+  cameras:
+    wrist:
+      type: mock
+      model: mock_wrist
+      serial: null
+      width: 640
+      height: 480
+      fps: 30
+      enable_depth: true
+    head:
+      type: mock
+      model: mock_head
+      serial: null
+      width: 640
+      height: 480
+      fps: 30
+      enable_depth: true

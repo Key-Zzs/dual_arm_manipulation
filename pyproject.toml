@@ -3,14 +3,14 @@ requires = ["setuptools >= 40.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "agilex_teleop"
-version = "1.0.0"
-description = "Agilex nero arm control and teleoperation"
+name = "dual_arm_manipulation"
+version = "0.1.0"
+description = "A modular bimanual manipulation framework using rule-based planning, visual servoing, and traditional perception-control pipelines"
 readme = { file = "README.md", content-type = "text/markdown" }
 authors = [
     { name = "Key-Zzs" }
 ]
-license = { text = "MIT License" }
+license = { text = " Apache-2.0 license " }
 requires-python = ">=3.10"
 dependencies = [
     "numpy<2.3,>=1.24",
@@ -35,15 +35,16 @@ dynamics = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Key-Zzs/agilex_teleop"
-Repository = "https://github.com/Key-Zzs/agilex_teleop"
+Homepage = "https://github.com/Key-Zzs/dual_arm_manipulation"
+Repository = "https://github.com/Key-Zzs/dual_arm_manipulation"
 
 [tool.setuptools.packages.find]
-where = ["."]
-include = ["pyAgxArm*", "nero*"]
-
-[tool.setuptools.package-data]
-pyAgxArm = ["py.typed", "*"]
+where = ["src"]
+include = ["wbcd_task1*"]
 
 [tool.setuptools]
 include-package-data = true
+
+[tool.pytest.ini_options]
+pythonpath = ["src", "."]
+testpaths = ["tests"]
