@@ -5,7 +5,7 @@ insert it into a test tube rack.
 
 The main code is under `src/wbcd_task1/`:
 
-- `execution`: Agilex Nero execution server, SDK adapter, safety guard, and
+- `execution`: Agilex Nero local execution service, SDK adapter, safety guard, and
   kinematics.
 - `perception`: cameras, OpenCV/YOLO/AprilTag placeholders, result types, and
   calibration helpers.
@@ -19,7 +19,7 @@ Run the dry-run task:
 python scripts/run_wbcd_task1.py --config configs/wbcd_task1_dry_run.yaml --dry-run
 ```
 
-Start the execution server:
+Initialize the local execution service:
 
 ```bash
 python scripts/start_execution_server.py --config configs/debug_execution.yaml --dry-run

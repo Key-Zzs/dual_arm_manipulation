@@ -7,8 +7,9 @@ pipeline.
 Main package:
 
 - `src/wbcd_task1/core`: config loading, result types, logging, exceptions.
-- `src/wbcd_task1/execution`: robot-only execution layer. It owns RPC server,
-  command dispatch, safety limits, SDK adapters, and kinematics.
+- `src/wbcd_task1/execution`: robot-only execution layer. It owns the local
+  execution service, command dispatch, safety limits, SDK adapters, and
+  kinematics.
 - `src/wbcd_task1/perception`: cameras, OpenCV/YOLO/AprilTag adapters,
   perception result types, and calibration helpers.
 - `src/wbcd_task1/planning`: state machine, rule checks, retry/recovery

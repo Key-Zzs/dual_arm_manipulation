@@ -25,9 +25,9 @@ was under:
 
 | Old path | New path | Notes |
 | --- | --- | --- |
-| `nero/teleop/interface/nero_interface_server.py` | `src/wbcd_task1/execution/server/` and `src/wbcd_task1/execution/sdk/nero_sdk.py` | Server concerns split into command types, dispatcher, safety guard, RPC facade, and SDK adapter. |
+| `nero/teleop/interface/nero_interface_server.py` | `src/wbcd_task1/execution/server/nero_interface_server.py` and `src/wbcd_task1/execution/sdk/nero_interface_backend.py` | The original server implementation is migrated and the real execution backend now calls its robot/gripper/servo methods. |
 | `nero/kinematics/analytic_IK_solver.py` | `src/wbcd_task1/execution/kinematics/nero_solver.py` | Only the Pinocchio solver API was migrated. The old analytic `Solver` class was not migrated. |
-| `pyAgxArm/` SDK usage | `src/wbcd_task1/execution/sdk/nero_sdk.py` | SDK is referenced through a thin adapter rather than imported by planning or task code. |
+| `pyAgxArm/` SDK usage | `src/wbcd_task1/execution/server/nero_interface_server.py` | SDK access remains inside the migrated original server implementation; planning and task code do not import it. |
 
 ## Moved To Legacy
 

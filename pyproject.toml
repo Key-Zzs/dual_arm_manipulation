@@ -15,7 +15,6 @@ requires-python = ">=3.10"
 dependencies = [
     "numpy<2.3,>=1.24",
     "scipy",
-    "zerorpc>=0.6.1",
     "python-can>=3.3.4",
     "typing-extensions>=3.7.4.3",
     "PyYAML>=6.0",
