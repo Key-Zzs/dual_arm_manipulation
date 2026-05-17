@@ -1,32 +1,56 @@
-# WBCD Task 1 Tube Insert
+# Bimanual Rule Control
 
-Traditional planning-control repository for WBCD task 1: grasp a test tube and
-insert it into a test tube rack.
+Lightweight traditional perception, planning, and communication stack for dual-arm rule-based manipulation.
 
-The main code is under `src/wbcd_task1/`:
+This repository does not contain the real robot execution server or Nero SDK control layer. Runtime robot execution is delegated to the external `agilex_teleop` zerorpc server, while this project keeps perception, planning, task orchestration, and a thin communication adapter.
 
-- `execution`: Agilex Nero local execution service, SDK adapter, safety guard, and
-  kinematics.
-- `perception`: cameras, OpenCV/YOLO/AprilTag placeholders, result types, and
-  calibration helpers.
-- `planning`: state machine, rules, retry/recovery, controllers, and search
-  patterns.
-- `tasks/wbcd_task1_tube_insert`: complete task orchestration and entry point.
+## Architecture
 
-Run the dry-run task:
-
-```bash
-python scripts/run_wbcd_task1.py --config configs/wbcd_task1_dry_run.yaml --dry-run
+```text
+perception -> planning/tasks -> comm adapter -> dual_agilex_nero -> external agilex_teleop server
 ```
 
-Initialize the local execution service:
+The preserved communication interface lives in:
 
-```bash
-python scripts/start_execution_server.py --config configs/debug_execution.yaml --dry-run
+```text
+src/bimanual_rule_control/comm/dual_agilex_nero/
 ```
 
-Run tests:
+The four files in that directory are intentionally kept as the verified robot communication interface.
+
+## Dry Run
 
 ```bash
-pytest
+python scripts/dry_run_task_1.py
+python scripts/run_task.py --config configs/dry_run.yaml --task task_1 --dry-run
 ```
+
+## Tests
+
+```bash
+/home/keyz/miniconda3/envs/lerobot/bin/pytest tests
+```
+
+If `pytest` is available in your active environment:
+
+```bash
+pytest tests
+```
+
+## Optional Real Communication
+
+Start the external server from `Key-Zzs/agilex_teleop` first, then install the optional RPC dependency and run the communication debug script:
+
+```bash
+pip install -e ".[rpc]"
+python scripts/debug_comm.py --config configs/debug_comm.yaml
+```
+
+Motion and gripper commands are gated by explicit flags:
+
+```bash
+python scripts/debug_comm.py --config configs/debug_comm.yaml --allow-motion
+python scripts/debug_comm.py --config configs/debug_comm.yaml --allow-gripper
+```
+
+`close()` in the new adapter only releases the client/socket path. Emergency stop is exposed separately as `emergency_stop()`.

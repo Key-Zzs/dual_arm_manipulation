@@ -1,0 +1,71 @@
+task:
+  name: task_1
+  dry_run: true
+  default_arm: right
+  max_retries_per_stage: 1
+
+comm:
+  type: mock
+  robot_ip: "127.0.0.1"
+  robot_port: 4242
+  action_send_freq: 100.0
+  debug: true
+
+gripper:
+  use_gripper: true
+  gripper_max_open: 0.1
+  gripper_force: 2.0
+  gripper_reverse: false
+  close_threshold: 0.5
+
+perception:
+  cameras:
+    wrist:
+      type: mock
+    head:
+      type: mock
+  detectors:
+    tube:
+      backend: mock
+    rack:
+      backend: mock
+    hole:
+      backend: mock
+    apriltag:
+      backend: mock
+      enabled: true
+
+planning:
+  visual_servo:
+    enabled: false
+    max_iterations: 1
+    pixel_error_threshold: 5
+    max_step_m: 0.003
+  grasp:
+    pregrasp_height_m: 0.03
+    lift_after_grasp_m: 0.04
+    mock_grasp_delta: [0, 0, 0, 0, 0, 0]
+  insertion:
+    preinsert_height_m: 0.03
+    descend_step_m: 0.001
+    use_micro_search: false
+    search_radius_m: 0.003
+    search_step_m: 0.001
+    mock_insert_delta: [0, 0, 0, 0, 0, 0]
+
+stages:
+  locate_tube:
+    enabled: true
+    max_retries: 1
+  grasp_tube:
+    enabled: true
+    max_retries: 1
+  locate_rack:
+    enabled: true
+    max_retries: 1
+  locate_empty_hole:
+    enabled: true
+    max_retries: 1
+  insert_tube:
+    enabled: true
+    max_retries: 1
