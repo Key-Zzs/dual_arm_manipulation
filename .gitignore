@@ -1,8 +1,17 @@
 # temporary files
 __pycache__/
+.pytest_cache/
+*.py[cod]
+
+# build artifacts
+build/
+dist/
+*.egg-info/
 
 # env configurations
 .vscode/
+.venv/
+venv/
 
 # AI files
 .agents/

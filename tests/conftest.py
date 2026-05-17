@@ -1,10 +1,10 @@
 from __future__ import annotations
+"""Lightweight pytest configuration for bimanual-rule-control tests."""
 
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-for path in (ROOT / "src", ROOT):
-    text = str(path)
-    if text not in sys.path:
-        sys.path.insert(0, text)
+SRC = ROOT / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))

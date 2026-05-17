@@ -1,28 +1,17 @@
 # Architecture
 
-This repository is now organized around WBCD task 1: grasp a test tube and
-insert it into a rack using a traditional perception, planning, and control
-pipeline.
+```text
+perception -> planning/tasks -> comm adapter -> dual_agilex_nero -> external agilex_teleop server
+```
 
-Main package:
+This repository is now structured as a lightweight traditional rule-control stack. It does not contain the real robot execution server and does not call the Nero SDK directly.
 
-- `src/wbcd_task1/core`: config loading, result types, logging, exceptions.
-- `src/wbcd_task1/execution`: robot-only execution layer. It owns the local
-  execution service, command dispatch, safety limits, SDK adapters, and
-  kinematics.
-- `src/wbcd_task1/perception`: cameras, OpenCV/YOLO/AprilTag adapters,
-  perception result types, and calibration helpers.
-- `src/wbcd_task1/planning`: state machine, rule checks, retry/recovery
-  policies, motion helpers, and controllers.
-- `src/wbcd_task1/tasks/wbcd_task1_tube_insert`: task context, state handlers,
-  task orchestration, and the public `run_wbcd_task1` entry point.
+The execution layer remains external:
 
-Dependency direction:
+- Repository: `https://github.com/Key-Zzs/agilex_teleop`
+- Server file: `nero_interface/nero_interface_server.py`
+- Transport: zerorpc, usually on port `4242`
 
-`tasks -> planning -> execution/perception types`
+The preserved `src/bimanual_rule_control/comm/dual_agilex_nero/` package is the verified communication interface. The new `NeroCommAdapter` wraps that interface so planning and task code do not import zerorpc or depend on RPC method details.
 
-`execution` does not import `perception`, `planning`, or `tasks`.
-
-Configuration is task-level only. The repository intentionally does not create
-`configs/execution`, `configs/perception`, `configs/calibration`, or
-`configs/tasks`.
+Perception and planning are intentionally decoupled from the real server. Dry-run uses mock cameras, mock detectors, and `MockRobotClient`.

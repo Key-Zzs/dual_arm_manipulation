@@ -6,26 +6,15 @@ perception:
   cameras:
     wrist:
       type: mock
-      model: mock_wrist
-      serial: null
-      width: 640
-      height: 480
-      fps: 30
-      enable_depth: true
+    head:
+      type: mock
   detectors:
-    tube_cap:
-      backend: mock
-      params:
-        center_px: [320, 240]
+    tube:
+      backend: opencv
     rack:
-      backend: mock
-      params:
-        center_px: [320, 240]
+      backend: opencv
     hole:
-      backend: mock
-      params:
-        center_px: [320, 240]
+      backend: opencv
     apriltag:
-      enabled: false
-      family: tag36h11
-      tag_size_m: 0.025
+      backend: apriltag
+      enabled: true

@@ -1,0 +1,19 @@
+task:
+  name: debug_comm
+  dry_run: false
+  default_arm: right
+
+comm:
+  type: nero_comm_adapter
+  robot_ip: "127.0.0.1"
+  robot_port: 4242
+  heartbeat: 20
+  action_send_freq: 100.0
+  debug: true
+
+gripper:
+  use_gripper: true
+  gripper_max_open: 0.1
+  gripper_force: 2.0
+  gripper_reverse: false
+  close_threshold: 0.5
