@@ -1,0 +1,316 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+Capture RGB dataset from Intel RealSense D405 / D435i.
+
+Example:
+    python capture_realsense_dataset.py
+
+Dependencies:
+    pip install pyrealsense2 opencv-python numpy
+"""
+
+import time
+from pathlib import Path
+from datetime import datetime
+
+import cv2
+import numpy as np
+import pyrealsense2 as rs
+
+
+# ============================================================
+# User Config
+# ============================================================
+
+CONFIG = {
+    # ---------------- Camera Selection ----------------
+    # 可选: "D405" 或 "D435i"
+    "camera_model": "D405",
+
+    # D405: 412622270701
+    # D435i: 339322074423
+    "serial_number": "412622270701",
+
+    # ---------------- Capture Schedule ----------------
+    # 每 i 秒拍摄 j 张
+    "interval_seconds": 1.0,   # i
+    "shots_per_round": 5,      # j
+
+    # 每轮拍摄完成后暂停 k 秒
+    "pause_seconds": 5.0,      # k
+
+    # 总共拍摄 n 张后退出
+    "total_images": 100,       # n
+
+    # ---------------- Image Settings ----------------
+    # 支持: "jpg", "jpeg", "png"
+    "image_format": "jpg",
+
+    # 图片大小
+    # D405 / D435i 常用: 640x480, 848x480, 1280x720
+    "width": 640,
+    "height": 480,
+    "fps": 30,
+
+    # ---------------- Output Settings ----------------
+    "output_dir": "./datasets/realsense_capture/images",
+
+    # 文件命名格式:
+    # <filename_prefix>_<拍摄序号>.<image_format>
+    # 例如: d405_black_cap_000001.jpg
+    "filename_prefix": "d405_black_cap",
+
+    # 拍摄序号从几开始
+    "start_index": 1,
+
+    # 序号位数
+    "index_digits": 6,
+
+    # 是否保存前先预热相机若干帧
+    "warmup_frames": 30,
+
+    # 是否显示实时画面
+    "show_preview": True,
+
+    # 按 ESC 可提前退出
+    "allow_esc_quit": True,
+}
+
+
+# ============================================================
+# Helpers
+# ============================================================
+
+def validate_config(cfg: dict) -> None:
+    image_format = cfg["image_format"].lower()
+    if image_format == "jpeg":
+        image_format = "jpg"
+        cfg["image_format"] = "jpg"
+
+    if image_format not in {"jpg", "png"}:
+        raise ValueError(
+            f"Unsupported image_format: {cfg['image_format']}. "
+            "Use 'jpg', 'jpeg', or 'png'."
+        )
+
+    if cfg["camera_model"] not in {"D405", "D435i"}:
+        raise ValueError("camera_model must be 'D405' or 'D435i'.")
+
+    if cfg["interval_seconds"] <= 0:
+        raise ValueError("interval_seconds must be > 0.")
+
+    if cfg["shots_per_round"] <= 0:
+        raise ValueError("shots_per_round must be > 0.")
+
+    if cfg["pause_seconds"] < 0:
+        raise ValueError("pause_seconds must be >= 0.")
+
+    if cfg["total_images"] <= 0:
+        raise ValueError("total_images must be > 0.")
+
+    if cfg["width"] <= 0 or cfg["height"] <= 0:
+        raise ValueError("width and height must be > 0.")
+
+
+def make_output_dir(output_dir: str) -> Path:
+    path = Path(output_dir).expanduser().resolve()
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def create_realsense_pipeline(cfg: dict):
+    pipeline = rs.pipeline()
+    rs_config = rs.config()
+
+    serial_number = str(cfg["serial_number"])
+    rs_config.enable_device(serial_number)
+
+    rs_config.enable_stream(
+        rs.stream.color,
+        int(cfg["width"]),
+        int(cfg["height"]),
+        rs.format.bgr8,
+        int(cfg["fps"]),
+    )
+
+    print("[INFO] Starting RealSense pipeline...")
+    print(f"[INFO] Camera model: {cfg['camera_model']}")
+    print(f"[INFO] Serial number: {serial_number}")
+    print(f"[INFO] Resolution: {cfg['width']}x{cfg['height']} @ {cfg['fps']} FPS")
+
+    profile = pipeline.start(rs_config)
+
+    device = profile.get_device()
+    device_name = device.get_info(rs.camera_info.name)
+    device_serial = device.get_info(rs.camera_info.serial_number)
+
+    print(f"[INFO] Connected device: {device_name}")
+    print(f"[INFO] Connected serial: {device_serial}")
+
+    if device_serial != serial_number:
+        raise RuntimeError(
+            f"Connected serial mismatch. Expected {serial_number}, got {device_serial}"
+        )
+
+    return pipeline
+
+
+def warmup_camera(pipeline, warmup_frames: int) -> None:
+    if warmup_frames <= 0:
+        return
+
+    print(f"[INFO] Warming up camera for {warmup_frames} frames...")
+    for _ in range(warmup_frames):
+        pipeline.wait_for_frames()
+    print("[INFO] Warmup complete.")
+
+
+def get_color_frame_bgr(pipeline) -> np.ndarray:
+    frames = pipeline.wait_for_frames()
+    color_frame = frames.get_color_frame()
+
+    if not color_frame:
+        raise RuntimeError("Failed to get color frame.")
+
+    color_image = np.asanyarray(color_frame.get_data())
+    return color_image
+
+
+def save_image(image_bgr: np.ndarray, save_path: Path, image_format: str) -> None:
+    if image_format == "jpg":
+        # JPEG quality: 95
+        ok = cv2.imwrite(str(save_path), image_bgr, [cv2.IMWRITE_JPEG_QUALITY, 95])
+    elif image_format == "png":
+        # PNG compression: 3, lower means faster/larger
+        ok = cv2.imwrite(str(save_path), image_bgr, [cv2.IMWRITE_PNG_COMPRESSION, 3])
+    else:
+        raise ValueError(f"Unsupported image_format: {image_format}")
+
+    if not ok:
+        raise RuntimeError(f"Failed to save image: {save_path}")
+
+
+def build_filename(cfg: dict, index: int) -> str:
+    prefix = cfg["filename_prefix"]
+    digits = int(cfg["index_digits"])
+    image_format = cfg["image_format"]
+
+    return f"{prefix}_{index:0{digits}d}.{image_format}"
+
+
+# ============================================================
+# Main Capture Logic
+# ============================================================
+
+def main():
+    cfg = CONFIG.copy()
+    validate_config(cfg)
+
+    output_dir = make_output_dir(cfg["output_dir"])
+
+    print("============================================================")
+    print("[INFO] RealSense Dataset Capture")
+    print("============================================================")
+    print(f"[INFO] Output directory: {output_dir}")
+    print(f"[INFO] Filename format: {cfg['filename_prefix']}_<index>.{cfg['image_format']}")
+    print(f"[INFO] Capture rule: every {cfg['interval_seconds']} s capture "
+          f"{cfg['shots_per_round']} images, then pause {cfg['pause_seconds']} s")
+    print(f"[INFO] Total target images: {cfg['total_images']}")
+    print("============================================================")
+
+    pipeline = None
+    captured_count = 0
+    current_index = int(cfg["start_index"])
+
+    try:
+        pipeline = create_realsense_pipeline(cfg)
+        warmup_camera(pipeline, int(cfg["warmup_frames"]))
+
+        while captured_count < cfg["total_images"]:
+            remaining = cfg["total_images"] - captured_count
+            shots_this_round = min(int(cfg["shots_per_round"]), remaining)
+
+            print("")
+            print(f"[INFO] Starting new round: will capture {shots_this_round} image(s).")
+            print(f"[INFO] Progress: {captured_count}/{cfg['total_images']}")
+
+            for shot_id in range(shots_this_round):
+                round_start_time = time.time()
+
+                image_bgr = get_color_frame_bgr(pipeline)
+
+                filename = build_filename(cfg, current_index)
+                save_path = output_dir / filename
+                save_image(image_bgr, save_path, cfg["image_format"])
+
+                captured_count += 1
+
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                print(
+                    f"[SAVE] {captured_count}/{cfg['total_images']} "
+                    f"{save_path} | {timestamp}"
+                )
+
+                current_index += 1
+
+                if cfg["show_preview"]:
+                    preview = image_bgr.copy()
+                    cv2.putText(
+                        preview,
+                        f"{captured_count}/{cfg['total_images']} saved",
+                        (20, 40),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        1.0,
+                        (0, 255, 0),
+                        2,
+                    )
+                    cv2.imshow("RealSense Capture Preview", preview)
+
+                    key = cv2.waitKey(1) & 0xFF
+                    if cfg["allow_esc_quit"] and key == 27:
+                        print("[INFO] ESC pressed. Exiting early.")
+                        return
+
+                if captured_count >= cfg["total_images"]:
+                    break
+
+                elapsed = time.time() - round_start_time
+                sleep_time = max(0.0, float(cfg["interval_seconds"]) - elapsed)
+                time.sleep(sleep_time)
+
+            if captured_count >= cfg["total_images"]:
+                break
+
+            print("")
+            print("------------------------------------------------------------")
+            print(
+                f"[PAUSE] Round finished. Captured {captured_count}/"
+                f"{cfg['total_images']} images."
+            )
+            print(f"[PAUSE] Waiting {cfg['pause_seconds']} seconds before next round...")
+            print("------------------------------------------------------------")
+            time.sleep(float(cfg["pause_seconds"]))
+
+        print("")
+        print("============================================================")
+        print(f"[DONE] Capture complete. Total saved images: {captured_count}")
+        print(f"[DONE] Output directory: {output_dir}")
+        print("============================================================")
+
+    except KeyboardInterrupt:
+        print("")
+        print("[INFO] KeyboardInterrupt received. Exiting safely.")
+
+    finally:
+        if pipeline is not None:
+            pipeline.stop()
+            print("[INFO] RealSense pipeline stopped.")
+
+        if cfg["show_preview"]:
+            cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    main()
