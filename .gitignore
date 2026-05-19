@@ -1,3 +1,6 @@
+# datasets
+datasets/
+
 # temporary files
 __pycache__/
 .pytest_cache/
